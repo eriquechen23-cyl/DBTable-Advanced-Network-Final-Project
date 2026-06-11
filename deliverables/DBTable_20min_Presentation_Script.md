@@ -1,25 +1,25 @@
 # DBTable 20 分鐘投影片報告講稿
 
 ## 0:00-1:30 封面與研究目標
-本次選擇 DBTable 作為 packet classification 演算法，目標是理解它如何用 discriminative bits 降低 lookup 時的候選規則數，並用 ClassBench ACL1 100K 資料做實驗。
+本次選擇 DBTable 作為 packet classification 演算法。我的重點不是只展示程式結果，而是說清楚論文方法：DBTable 如何用 discriminative bitsets 把十萬筆規則切成較小的候選集合。
 
 ## 1:30-4:00 Packet Classification 問題
-說明五元組、priority、IP prefix、port range、protocol mask。強調查詢必須找最高優先權相符規則，因此不能只做近似分類。
+封包分類要看五元組：來源 IP、目的 IP、來源埠、目的埠、協定。每條規則有 prefix、range、mask 與 priority。查詢時必須找最高優先權的匹配規則。
 
-## 4:00-8:00 DBTable 核心概念
-介紹 discriminative bit ranking：選出能讓規則分布較平均、覆蓋率較高的 IP bit。規則依 selected bits 放入 bucket；wildcard prefix 會複製到多個 bucket。
+## 4:00-8:30 DBTable 白話版
+DBTable 像圖書館索引。沒有索引時要一本一本找；DBTable 先從規則中挑出最能分辨位置的 bit，做成索引。封包進來時先用這些 bit 找到小 bucket，再在 bucket 中做完整比對。這樣不會漏掉正確答案，因為最後仍然做 exact match。
 
-## 8:00-11:00 架構與查詢流程
-建表流程是 parser -> bit ranking -> bucket table。查詢流程是 packet key extraction -> candidate bucket -> exact five-tuple match -> best priority。
+## 8:30-11:30 為什麼會快、代價是什麼
+快的原因是候選規則變少。代價是建表需要先分析 ruleset，而且 wildcard prefix 可能讓規則被放到多個 bucket，增加記憶體。也就是用建表成本和記憶體換查詢速度。
 
-## 11:00-14:00 程式實作
-說明 src/classbench.py、src/dbtable_classifier.py、scripts/run_experiment.py。強調本實作是 DBTable-inspired 教學版，不是 AMPS C++ 的完整逐行移植。
+## 11:30-14:00 程式實作
+src/classbench.py 解析 ClassBench 規則與 trace；src/dbtable_classifier.py 選 discriminative bits、建立 bucket table、查詢時做 exact match。這是 DBTable-inspired 教學版，不是 AMPS C++ 的完整逐行移植。
 
 ## 14:00-17:00 實驗結果
-資料集有效可解析 rules: 99,330；packets tested: 100,000。Build time 1.5531 秒，average lookup 9780.5 ns，P99 35100.0 ns，memory 約 20.55 MiB。
+有效規則數 99,330，測試封包 100,000。Build time 1.5531 秒，average lookup 9780.5 ns，P99 lookup 35100.0 ns，記憶體約 20.55 MiB。
 
 ## 17:00-19:00 比較分析
-先說 DBTable 適合 IP bits 有明顯可分性的 ruleset。與 tuple-space 類方法相比，DBTable 查詢候選集合更小但 wildcard replication 是成本；與 decision-tree/cut 類方法相比，DBTable 結構較直接，但完整最佳化仍比簡單 hash table 複雜。
+DBTable 適合 IP prefix 分布有可分辨性的 ruleset。若和 tuple-space 類方法比，DBTable 查詢候選集合較小，但 wildcard replication 是成本。若和 decision-tree 類方法比，DBTable 架構較像查表，較容易解釋，但完整最佳化仍有複雜度。
 
 ## 19:00-20:00 結論
-總結 DBTable 的重點是把 ruleset 分布轉成快速 bucket index，降低平均 lookup 成本。後續可將 AMPS C++ 的 subset、prefix_tuple、port_node 與 SIMD/hash 最佳化納入。
+DBTable 的核心是一句話：先用有辨識力的 bit 快速定位候選 bucket，再用完整五元組驗證正確答案。本專案完成資料集、程式、實驗、報告與 PPT。
