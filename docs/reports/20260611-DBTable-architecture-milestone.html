@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>DBTable Architecture Milestone Report</title>
+  <style>
+    body { font-family: Arial, "Microsoft JhengHei", sans-serif; margin: 40px; color: #1f2937; line-height: 1.55; }
+    h1, h2 { color: #143d59; }
+    .meta, .note { color: #5b6472; }
+    .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; align-items: center; margin: 24px 0; }
+    .box { border: 1px solid #9eb6c8; background: #f7fbff; border-radius: 8px; padding: 12px; text-align: center; min-height: 58px; }
+    .arrow { text-align: center; color: #356b8c; font-weight: bold; }
+    table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+    th, td { border: 1px solid #d0d7de; padding: 8px; vertical-align: top; }
+    th { background: #eaf3f8; text-align: left; }
+    code { background: #f4f4f4; padding: 2px 4px; }
+  </style>
+</head>
+<body>
+  <h1>DBTable Architecture Milestone Report</h1>
+  <p class="meta">Project: Final-Network | Milestone: architecture selected, implementation completed, benchmark verified | Author: Codex</p>
+
+  <h2>Current Situation</h2>
+  <p>Workspace now contains downloaded AMPS DBTable reference source, downloaded ClassBench source/data, a Python DBTable-inspired implementation, benchmark scripts, and generated report/PPT deliverable scripts.</p>
+
+  <h2>Architecture Flow Diagram</h2>
+  <div class="grid">
+    <div class="box">ClassBench<br>Rules</div><div class="arrow">-></div>
+    <div class="box">Parser<br>Rule objects</div><div class="arrow">-></div>
+    <div class="box">Bit Ranking<br>Selected bits</div>
+    <div class="box">Bucket Table<br>4096 buckets</div><div class="arrow">-></div>
+    <div class="box">Packet Key<br>Extraction</div><div class="arrow">-></div>
+    <div class="box">Candidate<br>Bucket Scan</div>
+    <div class="box">Exact 5-tuple<br>Verification</div>
+  </div>
+
+  <h2>Implementation Summary</h2>
+  <table>
+    <tr><th>Area</th><th>Decision</th></tr>
+    <tr><td>Classifier</td><td>DBTable-inspired discriminative IP bit bucket table with exact five-tuple verification.</td></tr>
+    <tr><td>Dataset</td><td><code>data/classbench/acl1_100000.txt</code>; valid parsed rules: 99,330; tested packets: 100,000.</td></tr>
+    <tr><td>Verification</td><td>Benchmark completed and 200 sampled packet lookups matched linear scan oracle.</td></tr>
+    <tr><td>Known gap</td><td>Educational Python implementation is not a line-by-line port of AMPS C++ DBTable.</td></tr>
+  </table>
+
+  <h2>Benchmark Snapshot</h2>
+  <table>
+    <tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>Build time</td><td>1.5531 s</td></tr>
+    <tr><td>Average lookup</td><td>9780.5 ns</td></tr>
+    <tr><td>P99 lookup</td><td>35100.0 ns</td></tr>
+    <tr><td>Estimated memory</td><td>20.55 MiB</td></tr>
+  </table>
+
+  <h2>Recommended Next Step Direction</h2>
+  <p>Replace the comparison chapter placeholders once the other two group members provide their algorithms and measured build/lookup/memory results. If more implementation depth is required, port AMPS C++ DBTable directly and compare it against the Python educational version.</p>
+</body>
+</html>

@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Third-party source mirrors are downloaded during setup and should not bloat the repo.
+external/
+
+# Office temporary files
+~$*
+
+# Local render/QA scratch
+outputs/
