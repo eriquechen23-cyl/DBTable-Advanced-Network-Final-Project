@@ -335,16 +335,16 @@ def build_slides() -> list[str]:
 
     slides.append(
         slide(
-            "與組員演算法比較時，用同一組核心指標",
+            "比較結果：HybridTSS 查詢最快，CutSplit 最省記憶體",
             "COMPARISON",
             [
                 table(
-                    ["Dimension", "DBTable", "Group Algorithm A", "Group Algorithm B"],
+                    ["Metric", "DBTable", "HybridTSS", "CutSplit"],
                     [
-                        ["Build", f"{SUMMARY['build_seconds']:.3f} s", "replace", "replace"],
-                        ["Lookup", f"{SUMMARY['lookup_avg_ns']:.0f} ns avg", "replace", "replace"],
-                        ["Memory", f"{SUMMARY['estimated_memory_bytes'] / 1048576:.2f} MiB", "replace", "replace"],
-                        ["Best fit", "IP bits are discriminative", "replace", "replace"],
+                        ["Build", f"{SUMMARY['build_seconds']:.3f} s", "0.0249 s", "0.4625 s"],
+                        ["Avg lookup", f"{SUMMARY['lookup_avg_ns']:.0f} ns", "133.987 ns", "300.719 ns"],
+                        ["Memory", f"{SUMMARY['estimated_memory_bytes'] / 1048576:.2f} MiB", "709.45 MiB", "0.512 MiB"],
+                        ["Takeaway", "method demo", "fastest lookup", "best balance"],
                     ],
                     0.65,
                     1.9,
@@ -352,7 +352,7 @@ def build_slides() -> list[str]:
                     0.6,
                     20,
                 ),
-                text_box(60, "取得同組兩位同學的演算法與實測數據後，替換 Algorithm A/B 欄位即可。", 0.9, 5.8, 11.0, 0.3, size=14, color="52606D"),
+                text_box(60, "注意：DBTable 是本專案 Python 教學版，絕對數字會受實作語言與最佳化程度影響。就本次實測而言，HybridTSS lookup 最快；CutSplit 在 build、lookup、memory 三者最均衡。", 0.85, 5.55, 11.5, 0.68, size=14, color="52606D", fill="FFFFFF", line="D6DEE7"),
             ],
             11,
         )

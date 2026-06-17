@@ -19,7 +19,7 @@ src/classbench.py 解析 ClassBench 規則與 trace；src/dbtable_classifier.py 
 有效規則數 99,330，測試封包 100,000。Build time 1.5531 秒，average lookup 9780.5 ns，P99 lookup 35100.0 ns，記憶體約 20.55 MiB。
 
 ## 17:00-19:00 比較分析
-DBTable 適合 IP prefix 分布有可分辨性的 ruleset。若和 tuple-space 類方法比，DBTable 查詢候選集合較小，但 wildcard replication 是成本。若和 decision-tree 類方法比，DBTable 架構較像查表，較容易解釋，但完整最佳化仍有複雜度。
+組員一 HybridTSS：build time 0.0249 秒、average lookup 133.987 ns、memory 709.45 MiB。它查詢最快，但記憶體最高，適合記憶體充足且追求最低 lookup latency 的情境。組員二 CutSplit：build time 0.4625 秒、average lookup 300.719 ns、memory 0.512 MiB，整體非常均衡，尤其記憶體最低。我的 DBTable Python 教學版 build time 1.5531 秒、average lookup 9780.5 ns、memory 20.55 MiB，因此本次實測不是速度最快；它的重點是展示論文 discriminative bitsets 如何縮小候選集合。若要公平比較論文級效能，後續應使用同語言、同硬體、同最佳化程度的 C++ 實作比較。
 
 ## 19:00-20:00 結論
 DBTable 的核心是一句話：先用有辨識力的 bit 快速定位候選 bucket，再用完整五元組驗證正確答案。本專案完成資料集、程式、實驗、報告與 PPT。

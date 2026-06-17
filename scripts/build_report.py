@@ -210,24 +210,25 @@ def build_docx(summary: dict) -> Path:
     add_heading(doc, "5. 與組員的比較分析", 1)
     add_para(
         doc,
-        "以下比較表已預留同組另外兩位組員的演算法與數據欄位。取得組員實測結果後，請替換 Algorithm A/B 與數值。",
+        "本節比較 DBTable、HybridTSS 與 CutSplit 三種方法。需要注意的是，本專案的 DBTable 是 Python 教學版 DBTable-inspired implementation；組員的 HybridTSS 與 CutSplit 數據可能來自不同語言或最佳化程度，因此絕對數字同時反映演算法與實作差異。不過，這些數據仍可用來分析不同方法在 build time、lookup time 與 memory 的取捨。",
     )
     add_table(
         doc,
-        ["面向", "DBTable", "Algorithm A（請填組員演算法）", "Algorithm B（請填組員演算法）"],
+        ["面向", "DBTable（本專案）", "HybridTSS（組員一）", "CutSplit（組員二）"],
         [
-            ["設計核心", "用 discriminative bits 建 bucket，先縮小候選集合。", "請填：例如 tuple-space/hash/tree。", "請填：例如 decision tree/cut/split。"],
-            ["Build time", f"{summary['build_seconds']:.4f} s", "請填", "請填"],
-            ["Lookup avg", f"{summary['lookup_avg_ns']:.1f} ns", "請填", "請填"],
-            ["Memory", f"{summary['estimated_memory_bytes'] / (1024 * 1024):.2f} MiB", "請填", "請填"],
-            ["優勢", "候選集合小；對高可分辨 IP bits 的 ACL ruleset 有利。", "請填", "請填"],
-            ["弱點", "wildcard prefix 可能造成 bucket replication；完整版本實作複雜。", "請填", "請填"],
-            ["適用情境", "規則 IP prefix 具明顯分布差異、需要低平均 lookup latency。", "請填", "請填"],
+            ["設計核心", "用 discriminative bits 建 bucket，先縮小候選集合。", "以 tuple space/hash 類索引快速定位相同 tuple 的候選規則。", "以 cut/split 決策結構切分搜尋空間，讓封包沿路徑找到候選規則。"],
+            ["Rules loaded", f"{summary['rules_loaded']:,}", "未提供", "99,833"],
+            ["Build time", f"{summary['build_seconds']:.4f} s", "0.0249 s", "0.4625 s"],
+            ["Average lookup time", f"{summary['lookup_avg_ns']:.1f} ns", "133.987 ns", "300.719 ns"],
+            ["Memory", f"{summary['estimated_memory_bytes'] / (1024 * 1024):.2f} MiB", "709.45 MiB", "0.512 MiB"],
+            ["優勢", "概念上能把查詢縮到小 bucket，且最後仍做 exact match。", "lookup time 最低，適合極度重視查詢延遲且記憶體充足的情境。", "build/lookup/memory 三者都很均衡，本次數據中 memory 最低。"],
+            ["弱點", "目前 Python 教學版 lookup 較慢；wildcard prefix 可能造成 bucket replication。", "memory consumption 很高，約為 DBTable 實測的 34.5 倍。", "lookup 比 HybridTSS 慢，但仍遠快於本專案 Python DBTable；決策切分品質依 ruleset 分布而定。"],
+            ["適用情境", "規則 IP prefix 具明顯分布差異，且可接受建表與記憶體換 lookup。", "記憶體不是瓶頸、需要最低平均 lookup latency。", "需要低記憶體且仍保有快速查詢的整體平衡情境。"],
         ],
     )
     add_para(
         doc,
-        "若組員選的是 tuple-space search 類方法，其優點通常是結構簡單且 incremental update 較直覺，但 lookup 可能需查多個 tuple。若組員選的是 decision-tree/cut/split 類方法，其查詢路徑可能很短，但建樹成本、記憶體膨脹與 rule replication 會是主要風險。DBTable 位於兩者之間：它使用 bit-based bucket 取得快速候選定位，同時保留精確比對避免分類錯誤。",
+        "從實測數字看，HybridTSS 的平均 lookup time 最低，只有 133.987 ns，但 memory 達 709.45 MiB，是三者中最高。這代表 HybridTSS 用大量記憶體換取非常快的查詢速度，適合記憶體資源充足且封包查詢量極大的系統。CutSplit 在本次數據中最均衡：build time 0.4625 s、average lookup time 300.719 ns、estimated memory 0.512 MiB，尤其記憶體使用量明顯最低。DBTable 在本專案的 Python 教學版中 build time 與 lookup time 都較高，因此若只看本次實測，CutSplit 是整體最好的選擇；但 DBTable 的論文價值在於 discriminative bitsets 的候選集合縮小策略，若使用完整 C++/SIMD/hash 最佳化實作，應再與 HybridTSS、CutSplit 做同環境比較。",
     )
 
     add_heading(doc, "6. 結論", 1)
@@ -314,7 +315,7 @@ src/classbench.py 解析 ClassBench 規則與 trace；src/dbtable_classifier.py 
 有效規則數 {summary['rules_loaded']:,}，測試封包 {summary['packets_tested']:,}。Build time {summary['build_seconds']:.4f} 秒，average lookup {summary['lookup_avg_ns']:.1f} ns，P99 lookup {summary['lookup_p99_ns']:.1f} ns，記憶體約 {summary['estimated_memory_bytes'] / (1024 * 1024):.2f} MiB。
 
 ## 17:00-19:00 比較分析
-DBTable 適合 IP prefix 分布有可分辨性的 ruleset。若和 tuple-space 類方法比，DBTable 查詢候選集合較小，但 wildcard replication 是成本。若和 decision-tree 類方法比，DBTable 架構較像查表，較容易解釋，但完整最佳化仍有複雜度。
+組員一 HybridTSS：build time 0.0249 秒、average lookup 133.987 ns、memory 709.45 MiB。它查詢最快，但記憶體最高，適合記憶體充足且追求最低 lookup latency 的情境。組員二 CutSplit：build time 0.4625 秒、average lookup 300.719 ns、memory 0.512 MiB，整體非常均衡，尤其記憶體最低。我的 DBTable Python 教學版 build time 1.5531 秒、average lookup 9780.5 ns、memory 20.55 MiB，因此本次實測不是速度最快；它的重點是展示論文 discriminative bitsets 如何縮小候選集合。若要公平比較論文級效能，後續應使用同語言、同硬體、同最佳化程度的 C++ 實作比較。
 
 ## 19:00-20:00 結論
 DBTable 的核心是一句話：先用有辨識力的 bit 快速定位候選 bucket，再用完整五元組驗證正確答案。本專案完成資料集、程式、實驗、報告與 PPT。
