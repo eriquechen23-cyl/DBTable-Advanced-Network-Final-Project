@@ -11,3 +11,4 @@ external/
 
 # Local render/QA scratch
 outputs/
+*.exe

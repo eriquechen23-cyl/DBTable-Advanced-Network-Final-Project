@@ -1,0 +1,2 @@
+implementation,source_file,rules_file,trace_file,repeats,rules_loaded,packets_tested,matched_packets,threshold,build_seconds_avg,build_seconds_min,lookup_avg_ns_avg,lookup_avg_ns_min,lookup_total_seconds_avg,estimated_memory_bytes,estimated_memory_mib
+AMPS/TA DBTable.cpp,ta_reference/amps_dbtable/DBTable.cpp,C:\workingset\projects\Final-Network\data\classbench\acl1_100000.txt,C:\workingset\projects\Final-Network\data\classbench\acl1_100000.txt_trace,5,99330,100000,100000,4,0.3776726,0.338201,59.902,52.75,0.005990199999999999,4211642,4.016534805

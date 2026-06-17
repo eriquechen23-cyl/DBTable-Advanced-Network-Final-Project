@@ -13,13 +13,13 @@ DBTable 像圖書館索引。沒有索引時要一本一本找；DBTable 先從�
 快的原因是候選規則變少。代價是建表需要先分析 ruleset，而且 wildcard prefix 可能讓規則被放到多個 bucket，增加記憶體。也就是用建表成本和記憶體換查詢速度。
 
 ## 11:30-14:00 程式實作
-src/classbench.py 解析 ClassBench 規則與 trace；src/dbtable_classifier.py 選 discriminative bits、建立 bucket table、查詢時做 exact match。這是 DBTable-inspired 教學版，不是 AMPS C++ 的完整逐行移植。
+本次正式數據使用 AMPS/助教 C++ DBTable.cpp。cpp/benchmark_ta_dbtable.cpp 負責把 ClassBench rules/trace 轉成 DBT::Rule 和 DBT::Packet，然後建立 DBT::DBTable 並量測 build、lookup、memory。scripts/run_ta_dbtable_experiment.py 會自動編譯並跑 5 次。
 
 ## 14:00-17:00 實驗結果
-有效規則數 99,330，測試封包 100,000。Build time 1.5531 秒，average lookup 9780.5 ns，P99 lookup 35100.0 ns，記憶體約 20.55 MiB。
+有效規則數 99,330，測試封包 100,000，重複 5 次。Build time avg 0.3777 秒，average lookup avg 59.902 ns，記憶體約 4.017 MiB。
 
 ## 17:00-19:00 比較分析
-組員一 HybridTSS：build time 0.0249 秒、average lookup 133.987 ns、memory 709.45 MiB。它查詢最快，但記憶體最高，適合記憶體充足且追求最低 lookup latency 的情境。組員二 CutSplit：build time 0.4625 秒、average lookup 300.719 ns、memory 0.512 MiB，整體非常均衡，尤其記憶體最低。我的 DBTable Python 教學版 build time 1.5531 秒、average lookup 9780.5 ns、memory 20.55 MiB，因此本次實測不是速度最快；它的重點是展示論文 discriminative bitsets 如何縮小候選集合。若要公平比較論文級效能，後續應使用同語言、同硬體、同最佳化程度的 C++ 實作比較。
+組員一 HybridTSS：build time 0.0249 秒、average lookup 133.987 ns、memory 709.45 MiB。組員二 CutSplit：build time 0.4625 秒、average lookup 300.719 ns、memory 0.512 MiB。更新後 DBTable C++ 實測 lookup 約 59.902 ns，是三者中最快；memory 約 4.017 MiB，遠低於 HybridTSS，但高於 CutSplit。因此 DBTable 適合追求極低查詢延遲且可接受數 MiB 記憶體的情境。
 
 ## 19:00-20:00 結論
 DBTable 的核心是一句話：先用有辨識力的 bit 快速定位候選 bucket，再用完整五元組驗證正確答案。本專案完成資料集、程式、實驗、報告與 PPT。

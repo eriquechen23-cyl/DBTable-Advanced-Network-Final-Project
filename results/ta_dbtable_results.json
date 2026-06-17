@@ -1,0 +1,80 @@
+{
+  "implementation": "AMPS/TA DBTable.cpp",
+  "source_file": "ta_reference/amps_dbtable/DBTable.cpp",
+  "rules_file": "C:\\workingset\\projects\\Final-Network\\data\\classbench\\acl1_100000.txt",
+  "trace_file": "C:\\workingset\\projects\\Final-Network\\data\\classbench\\acl1_100000.txt_trace",
+  "repeats": 5,
+  "rules_loaded": 99330,
+  "packets_tested": 100000,
+  "matched_packets": 100000,
+  "threshold": 4,
+  "build_seconds_avg": 0.3776726,
+  "build_seconds_min": 0.338201,
+  "lookup_avg_ns_avg": 59.902,
+  "lookup_avg_ns_min": 52.75,
+  "lookup_total_seconds_avg": 0.005990199999999999,
+  "estimated_memory_bytes": 4211642,
+  "estimated_memory_mib": 4.016534805,
+  "runs": [
+    {
+      "implementation": "TA DBTable.cpp",
+      "rules_loaded": 99330,
+      "packets_tested": 100000,
+      "matched_packets": 100000,
+      "threshold": 4,
+      "build_seconds": 0.338201,
+      "lookup_total_seconds": 0.005506,
+      "lookup_avg_ns": 55.06,
+      "estimated_memory_bytes": 4211642,
+      "estimated_memory_mib": 4.016534805
+    },
+    {
+      "implementation": "TA DBTable.cpp",
+      "rules_loaded": 99330,
+      "packets_tested": 100000,
+      "matched_packets": 100000,
+      "threshold": 4,
+      "build_seconds": 0.385484,
+      "lookup_total_seconds": 0.005275,
+      "lookup_avg_ns": 52.75,
+      "estimated_memory_bytes": 4211642,
+      "estimated_memory_mib": 4.016534805
+    },
+    {
+      "implementation": "TA DBTable.cpp",
+      "rules_loaded": 99330,
+      "packets_tested": 100000,
+      "matched_packets": 100000,
+      "threshold": 4,
+      "build_seconds": 0.405886,
+      "lookup_total_seconds": 0.006587,
+      "lookup_avg_ns": 65.87,
+      "estimated_memory_bytes": 4211642,
+      "estimated_memory_mib": 4.016534805
+    },
+    {
+      "implementation": "TA DBTable.cpp",
+      "rules_loaded": 99330,
+      "packets_tested": 100000,
+      "matched_packets": 100000,
+      "threshold": 4,
+      "build_seconds": 0.393551,
+      "lookup_total_seconds": 0.005497,
+      "lookup_avg_ns": 54.97,
+      "estimated_memory_bytes": 4211642,
+      "estimated_memory_mib": 4.016534805
+    },
+    {
+      "implementation": "TA DBTable.cpp",
+      "rules_loaded": 99330,
+      "packets_tested": 100000,
+      "matched_packets": 100000,
+      "threshold": 4,
+      "build_seconds": 0.365241,
+      "lookup_total_seconds": 0.007086,
+      "lookup_avg_ns": 70.86,
+      "estimated_memory_bytes": 4211642,
+      "estimated_memory_mib": 4.016534805
+    }
+  ]
+}

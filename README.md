@@ -11,6 +11,8 @@ This workspace contains a reproducible coursework implementation and deliverable
 - `scripts/run_experiment.py`: benchmark runner for build time, lookup time, and memory estimate.
 - `scripts/build_report.py`: generates the DOCX written report, milestone HTML, and 20-minute script.
 - `scripts/build_deck_ooxml.py`: generates the editable PPTX deck directly as OOXML.
+- `scripts/run_ta_dbtable_experiment.py`: compiles and runs the AMPS/TA `DBTable.cpp` benchmark.
+- `cpp/benchmark_ta_dbtable.cpp`: C++ harness for ClassBench rules/trace and AMPS DBTable.
 - `external/amps`: downloaded AMPS reference source that includes the C++ DBTable implementation.
 - `external/classbench-packet-classification`: downloaded ClassBench generator and seed files.
 
@@ -22,6 +24,12 @@ $py = "C:\Users\jr008\.cache\codex-runtimes\codex-primary-runtime\dependencies\p
 ```
 
 For a full trace run, remove or raise `--max-traces`.
+
+Run the AMPS/TA DBTable C++ benchmark used for the final report:
+
+```powershell
+& $py scripts\run_ta_dbtable_experiment.py 5 100000 4
+```
 
 Generate deliverables:
 

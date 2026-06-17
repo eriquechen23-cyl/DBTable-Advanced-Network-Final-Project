@@ -10,10 +10,25 @@ from docx.shared import Inches, Pt, RGBColor
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS = ROOT / "results" / "dbtable_results.json"
+RESULTS = ROOT / "results" / "ta_dbtable_results.json"
 DELIVERABLES = ROOT / "deliverables"
 REPORTS = ROOT / "docs" / "reports"
 STUDENT = "P77141155 陳燁龍"
+
+
+def normalize_summary(raw: dict) -> dict:
+    summary = dict(raw)
+    summary["build_seconds"] = raw.get("build_seconds_avg", raw.get("build_seconds", 0.0))
+    summary["build_seconds_min"] = raw.get("build_seconds_min", summary["build_seconds"])
+    summary["lookup_avg_ns"] = raw.get("lookup_avg_ns_avg", raw.get("lookup_avg_ns", 0.0))
+    summary["lookup_avg_ns_min"] = raw.get("lookup_avg_ns_min", summary["lookup_avg_ns"])
+    summary["lookup_total_seconds"] = raw.get(
+        "lookup_total_seconds_avg", raw.get("lookup_total_seconds", 0.0)
+    )
+    summary["estimated_memory_mib"] = raw.get(
+        "estimated_memory_mib", raw.get("estimated_memory_bytes", 0) / 1024 / 1024
+    )
+    return summary
 
 
 def add_heading(doc: Document, text: str, level: int = 1) -> None:
@@ -163,17 +178,17 @@ def build_docx(summary: dict) -> Path:
     add_heading(doc, "3. 實作方法", 1)
     add_para(
         doc,
-        "本專案實作位於 src/ 與 scripts/。為了讓實驗可重現，使用 Python 撰寫 DBTable-inspired classifier；外部 AMPS C++ 原始碼保留在 external/amps 作為參考。此實作保留 DBTable 用 discriminative bits 減少候選規則的核心概念，但不是 AMPS C++ DBTable 的逐行移植。",
+        "本專案原先使用 Python 教學版說明 DBTable 概念；本次依照助教提供的 DBTable.cpp / AMPS 官方 src/DBTable.cpp 改為 C++ 實測。benchmark harness 位於 cpp/benchmark_ta_dbtable.cpp，負責解析 ClassBench rules/trace、建立 DBT::DBTable、量測 build time、lookup time 與 memory estimate。可重現腳本為 scripts/run_ta_dbtable_experiment.py。",
     )
     add_table(
         doc,
         ["檔案", "用途"],
         [
-            ["src/classbench.py", "ClassBench rule/trace parser 與精確五元組 match helper。"],
-            ["src/dbtable_classifier.py", "DBTable-inspired discriminative-bit bucket classifier。"],
-            ["scripts/run_experiment.py", "產生 build time、lookup time、memory consumption 結果。"],
-            ["scripts/validate_correctness.py", "以線性掃描抽樣驗證查詢正確性。"],
-            ["scripts/generate_classbench_dataset.ps1", "從 ClassBench seed 重新產生資料集的輔助腳本。"],
+            ["external/amps/src/DBTable.cpp", "AMPS 官方 DBTable C++ 實作，與助教提供來源對應。"],
+            ["cpp/benchmark_ta_dbtable.cpp", "C++ benchmark harness：讀取 ClassBench、建立 DBTable、量測效能。"],
+            ["scripts/run_ta_dbtable_experiment.py", "自動編譯並重複執行 5 次，輸出 ta_dbtable_results.json/csv。"],
+            ["ta_reference/DBTable.cpp", "保留助教給的原始檔作對照；本地複製檔有一行 Init 被註解吃掉，因此實測使用 AMPS 官方檔。"],
+            ["src/dbtable_classifier.py", "早期 Python 教學版，保留作概念對照，不作正式數據來源。"],
         ],
     )
 
@@ -189,28 +204,26 @@ def build_docx(summary: dict) -> Path:
         doc,
         ["指標", "結果"],
         [
-            ["Build time", f"{summary['build_seconds']:.4f} s"],
-            ["Lookup total time", f"{summary['lookup_total_seconds']:.4f} s"],
-            ["Average lookup time", f"{summary['lookup_avg_ns']:.1f} ns"],
-            ["Median lookup time", f"{summary['lookup_median_ns']:.1f} ns"],
-            ["P95 lookup time", f"{summary['lookup_p95_ns']:.1f} ns"],
-            ["P99 lookup time", f"{summary['lookup_p99_ns']:.1f} ns"],
-            ["Throughput", f"{summary['throughput_mpps']:.4f} Mpps"],
-            ["Estimated memory", f"{summary['estimated_memory_bytes'] / (1024 * 1024):.2f} MiB"],
-            ["Bucket count", f"{summary['bucket_count']:,}"],
-            ["Average bucket size", f"{summary['average_bucket_size']:.2f} rules"],
-            ["Max bucket size", f"{summary['max_bucket_size']:,} rules"],
+            ["Implementation", summary.get("implementation", "AMPS/TA DBTable.cpp")],
+            ["Repeat count", str(summary.get("repeats", 1))],
+            ["DBTable threshold (BINTH)", str(summary.get("threshold", 4))],
+            ["Build time avg", f"{summary['build_seconds']:.4f} s"],
+            ["Build time min", f"{summary['build_seconds_min']:.4f} s"],
+            ["Lookup total time avg", f"{summary['lookup_total_seconds']:.6f} s"],
+            ["Average lookup time avg", f"{summary['lookup_avg_ns']:.3f} ns"],
+            ["Average lookup time min", f"{summary['lookup_avg_ns_min']:.3f} ns"],
+            ["Estimated memory", f"{summary['estimated_memory_mib']:.3f} MiB"],
         ],
     )
     add_para(
         doc,
-        "結果顯示，selected bits 將近十萬筆規則分散到 4096 個 bucket，平均每個 bucket 約 169 筆規則。這代表查詢階段大多只需要檢查候選 bucket，而不是掃描完整 ruleset。",
+        "結果顯示，改用 AMPS/助教 C++ DBTable.cpp 後，lookup time 大幅下降到數十 ns 等級。這代表先前 Python 版本主要適合說明概念，不適合作為正式效能比較。正式比較應以本節 C++ 實測數字為準。",
     )
 
     add_heading(doc, "5. 與組員的比較分析", 1)
     add_para(
         doc,
-        "本節比較 DBTable、HybridTSS 與 CutSplit 三種方法。需要注意的是，本專案的 DBTable 是 Python 教學版 DBTable-inspired implementation；組員的 HybridTSS 與 CutSplit 數據可能來自不同語言或最佳化程度，因此絕對數字同時反映演算法與實作差異。不過，這些數據仍可用來分析不同方法在 build time、lookup time 與 memory 的取捨。",
+        "本節比較 DBTable、HybridTSS 與 CutSplit 三種方法。DBTable 數據已改用 AMPS/助教 C++ DBTable.cpp 重新量測，與先前 Python 教學版不同。三者都使用 ClassBench acl1_100k 類資料，但 CutSplit 回報實際載入 99,833 筆規則，DBTable 本次載入 99,330 筆規則，因此仍需注意資料與實作細節差異。",
     )
     add_table(
         doc,
@@ -219,16 +232,16 @@ def build_docx(summary: dict) -> Path:
             ["設計核心", "用 discriminative bits 建 bucket，先縮小候選集合。", "以 tuple space/hash 類索引快速定位相同 tuple 的候選規則。", "以 cut/split 決策結構切分搜尋空間，讓封包沿路徑找到候選規則。"],
             ["Rules loaded", f"{summary['rules_loaded']:,}", "未提供", "99,833"],
             ["Build time", f"{summary['build_seconds']:.4f} s", "0.0249 s", "0.4625 s"],
-            ["Average lookup time", f"{summary['lookup_avg_ns']:.1f} ns", "133.987 ns", "300.719 ns"],
-            ["Memory", f"{summary['estimated_memory_bytes'] / (1024 * 1024):.2f} MiB", "709.45 MiB", "0.512 MiB"],
-            ["優勢", "概念上能把查詢縮到小 bucket，且最後仍做 exact match。", "lookup time 最低，適合極度重視查詢延遲且記憶體充足的情境。", "build/lookup/memory 三者都很均衡，本次數據中 memory 最低。"],
-            ["弱點", "目前 Python 教學版 lookup 較慢；wildcard prefix 可能造成 bucket replication。", "memory consumption 很高，約為 DBTable 實測的 34.5 倍。", "lookup 比 HybridTSS 慢，但仍遠快於本專案 Python DBTable；決策切分品質依 ruleset 分布而定。"],
-            ["適用情境", "規則 IP prefix 具明顯分布差異，且可接受建表與記憶體換 lookup。", "記憶體不是瓶頸、需要最低平均 lookup latency。", "需要低記憶體且仍保有快速查詢的整體平衡情境。"],
+            ["Average lookup time", f"{summary['lookup_avg_ns']:.3f} ns", "133.987 ns", "300.719 ns"],
+            ["Memory", f"{summary['estimated_memory_mib']:.3f} MiB", "709.45 MiB", "0.512 MiB"],
+            ["優勢", "lookup time 最低，memory 也遠低於 HybridTSS。", "build time 最短。", "memory 最低，build/lookup/memory 整體均衡。"],
+            ["弱點", "build time 不是最低，memory 高於 CutSplit。", "memory consumption 很高，約為 DBTable 的 176.6 倍。", "lookup 比 DBTable 與 HybridTSS 慢。"],
+            ["適用情境", "需要極低 lookup latency，同時希望 memory 不像 HybridTSS 那麼高。", "需要極快建表且記憶體充足。", "低記憶體設備或整體平衡需求。"],
         ],
     )
     add_para(
         doc,
-        "從實測數字看，HybridTSS 的平均 lookup time 最低，只有 133.987 ns，但 memory 達 709.45 MiB，是三者中最高。這代表 HybridTSS 用大量記憶體換取非常快的查詢速度，適合記憶體資源充足且封包查詢量極大的系統。CutSplit 在本次數據中最均衡：build time 0.4625 s、average lookup time 300.719 ns、estimated memory 0.512 MiB，尤其記憶體使用量明顯最低。DBTable 在本專案的 Python 教學版中 build time 與 lookup time 都較高，因此若只看本次實測，CutSplit 是整體最好的選擇；但 DBTable 的論文價值在於 discriminative bitsets 的候選集合縮小策略，若使用完整 C++/SIMD/hash 最佳化實作，應再與 HybridTSS、CutSplit 做同環境比較。",
+        f"從更新後的 C++ 實測數字看，DBTable 平均 lookup time 為 {summary['lookup_avg_ns']:.3f} ns，是三者中最低；HybridTSS 為 133.987 ns，CutSplit 為 300.719 ns。HybridTSS 的 build time 只有 0.0249 s，是三者最快，但 memory 達 709.45 MiB，成本最高。CutSplit 的 memory 只有 0.512 MiB，是三者最低，適合記憶體受限情境。整體來看，DBTable 在本次比較中提供最佳查詢延遲與可接受的記憶體；CutSplit 則是最佳低記憶體選擇；HybridTSS 適合極快建表但記憶體充足的情境。",
     )
 
     add_heading(doc, "6. 結論", 1)
@@ -270,7 +283,7 @@ def build_html(summary: dict) -> Path:
 </head>
 <body>
   <h1>DBTable Architecture Milestone Report</h1>
-  <p>Project: Final-Network | Author: {STUDENT} | Milestone: explanation revised, implementation verified</p>
+  <p>Project: Final-Network | Author: {STUDENT} | Milestone: AMPS/TA DBTable.cpp benchmark verified</p>
   <h2>Plain-Language Method</h2>
   <div class="box">DBTable is like a library index: choose a few highly discriminative IP bits, use them to jump to a small bucket, then perform exact five-tuple verification only inside that bucket.</div>
   <h2>Architecture Flow</h2>
@@ -280,10 +293,9 @@ def build_html(summary: dict) -> Path:
   <table>
     <tr><th>Metric</th><th>Value</th></tr>
     <tr><td>Rules</td><td>{summary['rules_loaded']:,}</td></tr>
-    <tr><td>Build time</td><td>{summary['build_seconds']:.4f} s</td></tr>
-    <tr><td>Average lookup</td><td>{summary['lookup_avg_ns']:.1f} ns</td></tr>
-    <tr><td>P99 lookup</td><td>{summary['lookup_p99_ns']:.1f} ns</td></tr>
-    <tr><td>Estimated memory</td><td>{summary['estimated_memory_bytes'] / (1024 * 1024):.2f} MiB</td></tr>
+    <tr><td>Build time avg</td><td>{summary['build_seconds']:.4f} s</td></tr>
+    <tr><td>Average lookup avg</td><td>{summary['lookup_avg_ns']:.3f} ns</td></tr>
+    <tr><td>Estimated memory</td><td>{summary['estimated_memory_mib']:.3f} MiB</td></tr>
   </table>
 </body>
 </html>
@@ -309,13 +321,13 @@ DBTable 像圖書館索引。沒有索引時要一本一本找；DBTable 先從�
 快的原因是候選規則變少。代價是建表需要先分析 ruleset，而且 wildcard prefix 可能讓規則被放到多個 bucket，增加記憶體。也就是用建表成本和記憶體換查詢速度。
 
 ## 11:30-14:00 程式實作
-src/classbench.py 解析 ClassBench 規則與 trace；src/dbtable_classifier.py 選 discriminative bits、建立 bucket table、查詢時做 exact match。這是 DBTable-inspired 教學版，不是 AMPS C++ 的完整逐行移植。
+本次正式數據使用 AMPS/助教 C++ DBTable.cpp。cpp/benchmark_ta_dbtable.cpp 負責把 ClassBench rules/trace 轉成 DBT::Rule 和 DBT::Packet，然後建立 DBT::DBTable 並量測 build、lookup、memory。scripts/run_ta_dbtable_experiment.py 會自動編譯並跑 5 次。
 
 ## 14:00-17:00 實驗結果
-有效規則數 {summary['rules_loaded']:,}，測試封包 {summary['packets_tested']:,}。Build time {summary['build_seconds']:.4f} 秒，average lookup {summary['lookup_avg_ns']:.1f} ns，P99 lookup {summary['lookup_p99_ns']:.1f} ns，記憶體約 {summary['estimated_memory_bytes'] / (1024 * 1024):.2f} MiB。
+有效規則數 {summary['rules_loaded']:,}，測試封包 {summary['packets_tested']:,}，重複 {summary.get('repeats', 1)} 次。Build time avg {summary['build_seconds']:.4f} 秒，average lookup avg {summary['lookup_avg_ns']:.3f} ns，記憶體約 {summary['estimated_memory_mib']:.3f} MiB。
 
 ## 17:00-19:00 比較分析
-組員一 HybridTSS：build time 0.0249 秒、average lookup 133.987 ns、memory 709.45 MiB。它查詢最快，但記憶體最高，適合記憶體充足且追求最低 lookup latency 的情境。組員二 CutSplit：build time 0.4625 秒、average lookup 300.719 ns、memory 0.512 MiB，整體非常均衡，尤其記憶體最低。我的 DBTable Python 教學版 build time 1.5531 秒、average lookup 9780.5 ns、memory 20.55 MiB，因此本次實測不是速度最快；它的重點是展示論文 discriminative bitsets 如何縮小候選集合。若要公平比較論文級效能，後續應使用同語言、同硬體、同最佳化程度的 C++ 實作比較。
+組員一 HybridTSS：build time 0.0249 秒、average lookup 133.987 ns、memory 709.45 MiB。組員二 CutSplit：build time 0.4625 秒、average lookup 300.719 ns、memory 0.512 MiB。更新後 DBTable C++ 實測 lookup 約 {summary['lookup_avg_ns']:.3f} ns，是三者中最快；memory 約 {summary['estimated_memory_mib']:.3f} MiB，遠低於 HybridTSS，但高於 CutSplit。因此 DBTable 適合追求極低查詢延遲且可接受數 MiB 記憶體的情境。
 
 ## 19:00-20:00 結論
 DBTable 的核心是一句話：先用有辨識力的 bit 快速定位候選 bucket，再用完整五元組驗證正確答案。本專案完成資料集、程式、實驗、報告與 PPT。
@@ -326,7 +338,7 @@ DBTable 的核心是一句話：先用有辨識力的 bit 快速定位候選 buc
 
 
 def main() -> None:
-    summary = json.loads(RESULTS.read_text(encoding="utf-8"))
+    summary = normalize_summary(json.loads(RESULTS.read_text(encoding="utf-8")))
     docx = build_docx(summary)
     html = build_html(summary)
     script = build_script(summary)

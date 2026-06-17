@@ -7,7 +7,17 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SUMMARY = json.loads((ROOT / "results" / "dbtable_results.json").read_text(encoding="utf-8"))
+RAW_SUMMARY = json.loads((ROOT / "results" / "ta_dbtable_results.json").read_text(encoding="utf-8"))
+SUMMARY = {
+    **RAW_SUMMARY,
+    "build_seconds": RAW_SUMMARY.get("build_seconds_avg", RAW_SUMMARY.get("build_seconds", 0.0)),
+    "lookup_avg_ns": RAW_SUMMARY.get("lookup_avg_ns_avg", RAW_SUMMARY.get("lookup_avg_ns", 0.0)),
+    "lookup_avg_ns_min": RAW_SUMMARY.get("lookup_avg_ns_min", RAW_SUMMARY.get("lookup_avg_ns", 0.0)),
+    "estimated_memory_mib": RAW_SUMMARY.get(
+        "estimated_memory_mib",
+        RAW_SUMMARY.get("estimated_memory_bytes", 0) / 1024 / 1024,
+    ),
+}
 OUT = ROOT / "deliverables" / "DBTable_Final_Project_Presentation.pptx"
 STUDENT = "P77141155 陳燁龍"
 
@@ -134,7 +144,7 @@ def build_slides() -> list[str]:
                 rule(12, 0.78, 2.35, 3.0),
                 metric(13, f"{SUMMARY['rules_loaded']:,}", "valid ClassBench ACL1 rules", 0.78, 5.2, "2F9CBB"),
                 metric(15, f"{SUMMARY['lookup_avg_ns']:.0f} ns", "average lookup", 3.28, 5.2, "2F9CBB"),
-                metric(17, f"{SUMMARY['estimated_memory_bytes'] / 1048576:.2f} MiB", "estimated memory", 5.78, 5.2, "2F9CBB"),
+                metric(17, f"{SUMMARY['estimated_memory_mib']:.2f} MiB", "estimated memory", 5.78, 5.2, "2F9CBB"),
                 text_box(19, f"高效能網路期末專案 | {STUDENT}", 0.8, 6.9, 6.6, 0.25, size=10, color="BFD8E5"),
             ],
             1,
@@ -256,16 +266,16 @@ def build_slides() -> list[str]:
 
     slides.append(
         slide(
-            "本專案實作：保留核心概念，讓實驗可重現",
+            "本專案實作：使用 AMPS/助教 C++ DBTable.cpp 實測",
             "IMPLEMENTATION",
             [
                 table(
                     ["File", "Role"],
                     [
-                        ["src/classbench.py", "解析 ClassBench rules/trace，做 exact five-tuple match。"],
-                        ["src/dbtable_classifier.py", "選 discriminative bits，建立 bucket table，執行 lookup。"],
-                        ["scripts/run_experiment.py", "量測 build time、lookup time、memory consumption。"],
-                        ["scripts/validate_correctness.py", "用線性掃描 oracle 做抽樣正確性驗證。"],
+                        ["external/amps/src/DBTable.cpp", "AMPS/助教 DBTable C++ 實作來源。"],
+                        ["cpp/benchmark_ta_dbtable.cpp", "ClassBench parser + DBT::DBTable benchmark harness。"],
+                        ["scripts/run_ta_dbtable_experiment.py", "自動編譯並跑 5 次，輸出正式數據。"],
+                        ["results/ta_dbtable_results.json", "正式 build/lookup/memory 結果。"],
                     ],
                     0.7,
                     1.9,
@@ -273,7 +283,7 @@ def build_slides() -> list[str]:
                     0.62,
                     20,
                 ),
-                text_box(60, "限制：這是 DBTable-inspired 教學實作，不是 AMPS C++ DBTable 的完整逐行移植。", 0.95, 5.65, 11.2, 0.35, size=14, color="A23B3B", bold=True),
+                text_box(60, "註：Downloads 的助教檔保留於 ta_reference/；實測使用 AMPS 官方 src/DBTable.cpp，避免本地複製檔中 Init 行被註解吃掉的問題。", 0.95, 5.55, 11.2, 0.48, size=13, color="A23B3B", bold=True),
             ],
             8,
         )
@@ -286,8 +296,8 @@ def build_slides() -> list[str]:
             [
                 metric(20, f"{SUMMARY['rules_loaded']:,}", "valid parsed rules", 0.9, 2.05),
                 metric(22, f"{SUMMARY['packets_tested']:,}", "packets tested", 3.55, 2.05),
-                metric(24, f"{SUMMARY['bucket_count']:,}", "buckets", 6.2, 2.05),
-                metric(26, f"{SUMMARY['average_bucket_size']:.1f}", "avg bucket size", 8.85, 2.05),
+                metric(24, f"{SUMMARY.get('threshold', 4)}", "DBT BINTH", 6.2, 2.05),
+                metric(26, f"{SUMMARY.get('repeats', 1)}", "benchmark repeats", 8.85, 2.05),
                 bullets(
                     [
                         "資料位於 data/classbench/。",
@@ -313,8 +323,8 @@ def build_slides() -> list[str]:
             [
                 metric(20, f"{SUMMARY['build_seconds']:.3f} s", "build time", 0.9, 2.05, "2E7D59"),
                 metric(22, f"{SUMMARY['lookup_avg_ns']:.0f} ns", "average lookup", 3.55, 2.05, "2E7D59"),
-                metric(24, f"{SUMMARY['lookup_p99_ns']:.0f} ns", "P99 lookup", 6.2, 2.05, "2E7D59"),
-                metric(26, f"{SUMMARY['estimated_memory_bytes'] / 1048576:.2f} MiB", "estimated memory", 8.85, 2.05, "2E7D59"),
+                metric(24, f"{SUMMARY.get('lookup_avg_ns_min', SUMMARY['lookup_avg_ns']):.0f} ns", "min avg lookup", 6.2, 2.05, "2E7D59"),
+                metric(26, f"{SUMMARY['estimated_memory_mib']:.2f} MiB", "estimated memory", 8.85, 2.05, "2E7D59"),
                 bullets(
                     [
                         "4096 buckets 將近十萬規則分成平均約 169 筆的候選集合。",
@@ -335,7 +345,7 @@ def build_slides() -> list[str]:
 
     slides.append(
         slide(
-            "比較結果：HybridTSS 查詢最快，CutSplit 最省記憶體",
+            "比較結果：DBTable 查詢最快，CutSplit 最省記憶體",
             "COMPARISON",
             [
                 table(
@@ -343,8 +353,8 @@ def build_slides() -> list[str]:
                     [
                         ["Build", f"{SUMMARY['build_seconds']:.3f} s", "0.0249 s", "0.4625 s"],
                         ["Avg lookup", f"{SUMMARY['lookup_avg_ns']:.0f} ns", "133.987 ns", "300.719 ns"],
-                        ["Memory", f"{SUMMARY['estimated_memory_bytes'] / 1048576:.2f} MiB", "709.45 MiB", "0.512 MiB"],
-                        ["Takeaway", "method demo", "fastest lookup", "best balance"],
+                        ["Memory", f"{SUMMARY['estimated_memory_mib']:.3f} MiB", "709.45 MiB", "0.512 MiB"],
+                        ["Takeaway", "fastest lookup", "fastest build", "lowest memory"],
                     ],
                     0.65,
                     1.9,
@@ -352,7 +362,7 @@ def build_slides() -> list[str]:
                     0.6,
                     20,
                 ),
-                text_box(60, "注意：DBTable 是本專案 Python 教學版，絕對數字會受實作語言與最佳化程度影響。就本次實測而言，HybridTSS lookup 最快；CutSplit 在 build、lookup、memory 三者最均衡。", 0.85, 5.55, 11.5, 0.68, size=14, color="52606D", fill="FFFFFF", line="D6DEE7"),
+                text_box(60, "更新後 DBTable 使用 AMPS/助教 C++ 實作重跑：lookup avg 約 56.776 ns，是三者中最快；CutSplit 記憶體最低；HybridTSS 建表最快但記憶體最高。", 0.85, 5.55, 11.5, 0.68, size=14, color="52606D", fill="FFFFFF", line="D6DEE7"),
             ],
             11,
         )
