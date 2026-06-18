@@ -19,7 +19,7 @@ DBTable 像圖書館索引。沒有索引時要一本一本找；DBTable 先從�
 有效規則數 99,330，測試封包 100,000，重複 5 次。Build time avg 0.3777 秒，average lookup avg 59.902 ns，記憶體約 4.017 MiB。
 
 ## 17:00-19:00 比較分析
-組員一 HybridTSS：build time 0.0249 秒、average lookup 133.987 ns、memory 709.45 MiB。組員二 CutSplit：build time 0.4625 秒、average lookup 300.719 ns、memory 0.512 MiB。更新後 DBTable C++ 實測 lookup 約 59.902 ns，是三者中最快；memory 約 4.017 MiB，遠低於 HybridTSS，但高於 CutSplit。因此 DBTable 適合追求極低查詢延遲且可接受數 MiB 記憶體的情境。
+組員一 HybridTSS：build time 0.0249 秒、average lookup 133.987 ns、memory 709.45 MiB。組員二 CutSplit：build time 0.424338 秒、average lookup 285.687 ns、memory 537.38 MiB。更新後 DBTable C++ 實測 lookup 約 59.902 ns，是三者中最快；memory 約 4.017 MiB，也是三者最低。因此 DBTable 適合追求極低查詢延遲，並希望記憶體成本明顯低於其他對照方法的情境。
 
 ## 19:00-20:00 結論
 DBTable 的核心是一句話：先用有辨識力的 bit 快速定位候選 bucket，再用完整五元組驗證正確答案。本專案完成資料集、程式、實驗、報告與 PPT。

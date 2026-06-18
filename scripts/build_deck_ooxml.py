@@ -345,16 +345,16 @@ def build_slides() -> list[str]:
 
     slides.append(
         slide(
-            "比較結果：DBTable 查詢最快，CutSplit 最省記憶體",
+            "比較結果：DBTable 查詢最快且記憶體最低",
             "COMPARISON",
             [
                 table(
                     ["Metric", "DBTable", "HybridTSS", "CutSplit"],
                     [
-                        ["Build", f"{SUMMARY['build_seconds']:.3f} s", "0.0249 s", "0.4625 s"],
-                        ["Avg lookup", f"{SUMMARY['lookup_avg_ns']:.0f} ns", "133.987 ns", "300.719 ns"],
-                        ["Memory", f"{SUMMARY['estimated_memory_mib']:.3f} MiB", "709.45 MiB", "0.512 MiB"],
-                        ["Takeaway", "fastest lookup", "fastest build", "lowest memory"],
+                        ["Build", f"{SUMMARY['build_seconds']:.3f} s", "0.0249 s", "0.424338 s"],
+                        ["Avg lookup", f"{SUMMARY['lookup_avg_ns']:.0f} ns", "133.987 ns", "285.687 ns"],
+                        ["Memory", f"{SUMMARY['estimated_memory_mib']:.3f} MiB", "709.45 MiB", "537.38 MiB"],
+                        ["Takeaway", "fastest lookup / lowest memory", "fastest build", "shorter build than DBTable"],
                     ],
                     0.65,
                     1.9,
@@ -362,7 +362,7 @@ def build_slides() -> list[str]:
                     0.6,
                     20,
                 ),
-                text_box(60, "更新後 DBTable 使用 AMPS/助教 C++ 實作重跑：lookup avg 約 56.776 ns，是三者中最快；CutSplit 記憶體最低；HybridTSS 建表最快但記憶體最高。", 0.85, 5.55, 11.5, 0.68, size=14, color="52606D", fill="FFFFFF", line="D6DEE7"),
+                text_box(60, "更新後 DBTable 使用 AMPS/助教 C++ 實作重跑：lookup avg 約 59.902 ns，是三者中最快，memory 約 4.017 MiB 也是三者最低；HybridTSS 建表最快但記憶體最高。", 0.85, 5.55, 11.5, 0.68, size=14, color="52606D", fill="FFFFFF", line="D6DEE7"),
             ],
             11,
         )

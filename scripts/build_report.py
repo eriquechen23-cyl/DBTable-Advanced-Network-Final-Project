@@ -231,17 +231,17 @@ def build_docx(summary: dict) -> Path:
         [
             ["設計核心", "用 discriminative bits 建 bucket，先縮小候選集合。", "以 tuple space/hash 類索引快速定位相同 tuple 的候選規則。", "以 cut/split 決策結構切分搜尋空間，讓封包沿路徑找到候選規則。"],
             ["Rules loaded", f"{summary['rules_loaded']:,}", "未提供", "99,833"],
-            ["Build time", f"{summary['build_seconds']:.4f} s", "0.0249 s", "0.4625 s"],
-            ["Average lookup time", f"{summary['lookup_avg_ns']:.3f} ns", "133.987 ns", "300.719 ns"],
-            ["Memory", f"{summary['estimated_memory_mib']:.3f} MiB", "709.45 MiB", "0.512 MiB"],
-            ["優勢", "lookup time 最低，memory 也遠低於 HybridTSS。", "build time 最短。", "memory 最低，build/lookup/memory 整體均衡。"],
-            ["弱點", "build time 不是最低，memory 高於 CutSplit。", "memory consumption 很高，約為 DBTable 的 176.6 倍。", "lookup 比 DBTable 與 HybridTSS 慢。"],
-            ["適用情境", "需要極低 lookup latency，同時希望 memory 不像 HybridTSS 那麼高。", "需要極快建表且記憶體充足。", "低記憶體設備或整體平衡需求。"],
+            ["Build time", f"{summary['build_seconds']:.4f} s", "0.0249 s", "0.424338 s"],
+            ["Average lookup time", f"{summary['lookup_avg_ns']:.3f} ns", "133.987 ns", "285.687 ns"],
+            ["Memory", f"{summary['estimated_memory_mib']:.3f} MiB", "709.45 MiB", "537.38 MiB"],
+            ["優勢", "lookup time 最低，memory 也是三者最低。", "build time 最短。", "build time 比 DBTable 短，memory 低於 HybridTSS。"],
+            ["弱點", "build time 不是最低。", "memory consumption 很高，約為 DBTable 的 176.6 倍。", "lookup 比 DBTable 與 HybridTSS 慢，memory 約為 DBTable 的 133.8 倍。"],
+            ["適用情境", "需要極低 lookup latency，且希望 memory 低於其他兩種對照方法。", "需要極快建表且記憶體充足。", "建表時間比 DBTable 敏感，但仍可接受較高記憶體的情境。"],
         ],
     )
     add_para(
         doc,
-        f"從更新後的 C++ 實測數字看，DBTable 平均 lookup time 為 {summary['lookup_avg_ns']:.3f} ns，是三者中最低；HybridTSS 為 133.987 ns，CutSplit 為 300.719 ns。HybridTSS 的 build time 只有 0.0249 s，是三者最快，但 memory 達 709.45 MiB，成本最高。CutSplit 的 memory 只有 0.512 MiB，是三者最低，適合記憶體受限情境。整體來看，DBTable 在本次比較中提供最佳查詢延遲與可接受的記憶體；CutSplit 則是最佳低記憶體選擇；HybridTSS 適合極快建表但記憶體充足的情境。",
+        f"從更新後的 C++ 實測數字看，DBTable 平均 lookup time 為 {summary['lookup_avg_ns']:.3f} ns，是三者中最低；HybridTSS 為 133.987 ns，CutSplit 為 285.687 ns。HybridTSS 的 build time 只有 0.0249 s，是三者最快，但 memory 達 709.45 MiB，成本最高。CutSplit 的 build time 為 0.424338 s，比 DBTable 短，但 memory 為 537.38 MiB，仍明顯高於 DBTable。整體來看，DBTable 在本次比較中同時提供最佳查詢延遲與最低記憶體使用量；HybridTSS 適合極快建表但記憶體充足的情境；CutSplit 則適合重視建表時間勝過 lookup latency 與 memory footprint 的情境。",
     )
 
     add_heading(doc, "6. 結論", 1)
@@ -260,7 +260,11 @@ def build_docx(summary: dict) -> Path:
         doc.add_paragraph(ref)
 
     out = DELIVERABLES / "DBTable_Final_Project_Report.docx"
-    doc.save(out)
+    try:
+        doc.save(out)
+    except PermissionError:
+        out = DELIVERABLES / "DBTable_Final_Project_Report_Updated.docx"
+        doc.save(out)
     return out
 
 
@@ -327,7 +331,7 @@ DBTable 像圖書館索引。沒有索引時要一本一本找；DBTable 先從�
 有效規則數 {summary['rules_loaded']:,}，測試封包 {summary['packets_tested']:,}，重複 {summary.get('repeats', 1)} 次。Build time avg {summary['build_seconds']:.4f} 秒，average lookup avg {summary['lookup_avg_ns']:.3f} ns，記憶體約 {summary['estimated_memory_mib']:.3f} MiB。
 
 ## 17:00-19:00 比較分析
-組員一 HybridTSS：build time 0.0249 秒、average lookup 133.987 ns、memory 709.45 MiB。組員二 CutSplit：build time 0.4625 秒、average lookup 300.719 ns、memory 0.512 MiB。更新後 DBTable C++ 實測 lookup 約 {summary['lookup_avg_ns']:.3f} ns，是三者中最快；memory 約 {summary['estimated_memory_mib']:.3f} MiB，遠低於 HybridTSS，但高於 CutSplit。因此 DBTable 適合追求極低查詢延遲且可接受數 MiB 記憶體的情境。
+組員一 HybridTSS：build time 0.0249 秒、average lookup 133.987 ns、memory 709.45 MiB。組員二 CutSplit：build time 0.424338 秒、average lookup 285.687 ns、memory 537.38 MiB。更新後 DBTable C++ 實測 lookup 約 {summary['lookup_avg_ns']:.3f} ns，是三者中最快；memory 約 {summary['estimated_memory_mib']:.3f} MiB，也是三者最低。因此 DBTable 適合追求極低查詢延遲，並希望記憶體成本明顯低於其他對照方法的情境。
 
 ## 19:00-20:00 結論
 DBTable 的核心是一句話：先用有辨識力的 bit 快速定位候選 bucket，再用完整五元組驗證正確答案。本專案完成資料集、程式、實驗、報告與 PPT。
